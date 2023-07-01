@@ -69,7 +69,7 @@ transformer-lower:
 	${LLVM_AS} | \
 	${LLC} -filetype=obj ${OPT_FLAG} -o transformer.o
 transformer-compile:
-	g++ main.cc transformer.o /home/wlq/buddy-mlir/llvm/build/lib/libmlir_c_runner_utils.so -o main
+	g++ main.cc transformer.o ../../llvm/build/lib/libmlir_c_runner_utils.so -o main
 #	${MLIR_CPU_RUNNER} ${OPT_FLAG} -e main -entry-point-result=void \
 #		-shared-libs=${MLIR_RUNNER_UTILS} -shared-libs=${MLIR_C_RUNNER_UTILS}
 transformer-jit:
