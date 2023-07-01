@@ -5,6 +5,9 @@ MLIR_TRANSLATE := ../../llvm/build/bin/mlir-translate
 MLIR_CPU_RUNNER := ../../llvm/build/bin/mlir-cpu-runner
 LLC := ../../llvm/build/bin/llc
 OPT_FLAG := -O0
+MLIR_RUNNER_UTILS := ../../llvm/build/lib/libmlir_runner_utils.dylib
+MLIR_C_RUNNER_UTILS := ../../llvm/build/lib/libmlir_c_runner_utils.dylib
+LLVM_AS := ../../llvm/build/bin/llvm-as
 
 resnet-18-lower:
 	@${MLIR_OPT} ./ResNet-18.mlir \
@@ -30,4 +33,10 @@ resnet-18-lower:
 		--llvm-request-c-wrappers \
 		--convert-func-to-llvm \
 		--reconcile-unrealized-casts \
-		-o ./log.mlir
+		-convert-scf-to-cf \
+		-convert-cf-to-llvm | \
+	${MLIR_TRANSLATE} \
+		-mlir-to-llvmir | \
+	llc -mtriple=x86_64 --filetype=obj -o resnet18-c.o
+#		${MLIR_CPU_RUNNER} ${OPT_FLAG} -e main -entry-point-result=f32 \
+#		-shared-libs=${MLIR_RUNNER_UTILS} -shared-libs=${MLIR_C_RUNNER_UTILS}
