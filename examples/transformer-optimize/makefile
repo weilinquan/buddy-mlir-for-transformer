@@ -1,6 +1,7 @@
 #!/bin/bash
 BUDDY_OPT := ../../build/bin/buddy-opt
 MLIR_OPT := ../../llvm/build/bin/mlir-opt
+TRANSFORMER_OPT := ../../build/bin/transformer-opt
 MLIR_TRANSLATE := ../../llvm/build/bin/mlir-translate
 MLIR_CPU_RUNNER := ../../llvm/build/bin/mlir-cpu-runner
 LLC := ../../llvm/build/bin/llc
@@ -41,9 +42,9 @@ endif
 #	${MLIR_CPU_RUNNER} ${OPT_FLAG} -e main -entry-point-result=void \
 #		-shared-libs=${MLIR_RUNNER_UTILS} -shared-libs=${MLIR_C_RUNNER_UTILS}
 transformer-lower:
-	@${MLIR_OPT} ./bert_tiny_mhlo.mlir \
+	@${TRANSFORMER_OPT} ./bert_tiny_mhlo.mlir \
 		-pass-pipeline="builtin.module(func.func(tosa-to-linalg-named),func.func(tosa-to-tensor),func.func(tosa-to-linalg),func.func(tosa-to-arith))" | \
-	${MLIR_OPT} --test-linalg-transform-patterns="test-generalize-pad-tensor" \
+	${TRANSFORMER_OPT} \
 		--linalg-bufferize \
 		--convert-linalg-to-loops \
 		--func-bufferize \
@@ -66,36 +67,6 @@ transformer-lower:
 		--reconcile-unrealized-casts | \
 	${MLIR_TRANSLATE} \
 		-mlir-to-llvmir | \
-	${LLVM_AS} | \
-	${LLC} -filetype=obj ${OPT_FLAG} -o transformer.o
+	${LLC} -mtriple=x86_64 -filetype=obj ${OPT_FLAG} -o transformer.o
 transformer-compile:
 	g++ main.cc transformer.o ../../llvm/build/lib/libmlir_c_runner_utils.so -o main
-#	${MLIR_CPU_RUNNER} ${OPT_FLAG} -e main -entry-point-result=void \
-#		-shared-libs=${MLIR_RUNNER_UTILS} -shared-libs=${MLIR_C_RUNNER_UTILS}
-transformer-jit:
-	@${MLIR_OPT} ./bert_tiny_mhlo_run_JIT.mlir \
-		-pass-pipeline="builtin.module(func.func(tosa-to-linalg-named),func.func(tosa-to-tensor),func.func(tosa-to-linalg),func.func(tosa-to-arith))" | \
-	${MLIR_OPT} --test-linalg-transform-patterns="test-generalize-pad-tensor" \
-		--empty-tensor-to-alloc-tensor \
-		--linalg-bufferize \
-		--convert-linalg-to-loops \
-		--func-bufferize \
-		--arith-bufferize \
-		--tensor-bufferize \
-		--finalizing-bufferize \
-		--convert-vector-to-scf \
-		--convert-scf-to-cf \
-		--expand-strided-metadata \
-		--lower-affine \
-		--convert-vector-to-llvm \
-		--memref-expand \
-		--arith-expand \
-		--convert-arith-to-llvm \
-		--finalize-memref-to-llvm \
-		--convert-math-to-llvm \
-		--convert-math-to-libm \
-		--llvm-request-c-wrappers \
-		--convert-func-to-llvm \
-		--reconcile-unrealized-casts | \
-	${MLIR_CPU_RUNNER} ${OPT_FLAG} -e forward -entry-point-result=void \
-		-shared-libs=${MLIR_RUNNER_UTILS} -shared-libs=${MLIR_C_RUNNER_UTILS}
