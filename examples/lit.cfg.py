@@ -48,10 +48,12 @@ config.excludes = [
     'MLIRSCF',
     'MLIRSparseTensor',
     'MLIRTOSA',
+    'MLIRTransform',
     'Pooling',
     'RISCVBuddyExt',
     'RVVDialect',
     'RVVExperiment',
+    'SIMDExperiment',
     'ToyDSL',
     'VectorExpDialect',
     'log.mlir'
